@@ -1,0 +1,62 @@
+---
+title: "Data Preprocessing"
+author: "Kabir Snell"
+date: "2022-11-30"
+output: html_document
+---
+
+## Data Preprocessing
+Below, I will document the steps taken for preprocessing of the data
+
+```{R message = FALSE}
+# Loading necessary libraries
+library(tidyverse)
+```
+
+```{R}
+# Importing the data set
+genre <- read.csv('../data/unprocessed/music_genre.csv')
+```
+
+### Removing Variables
+The first thing we will do is remove columns that will not be useful in our predictive model. The variables that we will be removing are: 'instance_id', 'artist_name', 'track_name' and 'obtained_date'
+
+```{R}
+genre <- genre %>%
+  select(-c(instance_id, artist_name, track_name, obtained_date))
+```
+
+### Removing Missing Observations / Values
+First, we will remove any NULL values in the data set.
+
+In the data set, there are missing values for 'duration_ms' that are represented as the numeric value '-1', and missing values for tempo that are represented as '?'. We will remove observations that have these missing values as they will hinder our data visualizations and predictive models
+
+```{R}
+genre <- drop_na(genre)
+
+genre <- genre %>%
+  filter(duration_ms != -1) %>%
+  filter(tempo != '?')
+```
+
+### Changing Variable Types
+The data type we will be changing are as follows:
+
+    tempo: string -> numeric
+    
+```{R}
+genre$tempo <- as.numeric(genre$tempo)
+```
+
+### Writing the clean data frame to a CSV file
+```{R}
+write.csv(genre, "../data/processed/processed_data.csv")
+```
+
+
+
+
+
+
+
+

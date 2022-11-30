@@ -1,0 +1,106 @@
+---
+title: "Data Visualizations"
+author: "Kabir Snell"
+date: "2022-11-30"
+output: html_document
+---
+## Data Visualizations
+
+```{R message=FALSE}
+# Loading Libraries
+library(tidyverse)
+library(corrplot)
+library(RColorBrewer)
+```
+
+```{R}
+# Loading Processed Data
+genre <- read.csv('../data/processed/processed_data.csv', stringsAsFactors = TRUE)
+```
+
+```{R}
+# Removing extreme outliers for better visualizations
+outliers <- function(x) {
+
+  Q1 <- quantile(x, probs=.25)
+  Q3 <- quantile(x, probs=.75)
+  iqr = Q3-Q1
+
+ upper_limit = Q3 + (iqr*3)
+ lower_limit = Q1 - (iqr*3)
+
+ x > upper_limit | x < lower_limit
+}
+
+remove_outliers <- function(df, cols = names(df)) {
+  for (col in cols) {
+    df <- df[!outliers(df[[col]]),]
+  }
+  df
+}
+```
+
+```{R}
+genre %>%
+  ggplot(aes(x = music_genre, fill = music_genre)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Spectral")
+```
+
+```{R}
+genre_numeric <- genre %>%
+  select(-c(X, key, mode, music_genre)) %>%
+  remove_outliers() %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "value") %>%
+  arrange(variable)
+```
+
+```{R}
+genre_numeric %>%
+  ggplot(aes(x=value, fill = variable)) +
+  geom_histogram() +
+  facet_wrap(~ variable, scales = "free") +
+  labs(title = "Distribution of Spotify Variables")
+```
+
+```{R}
+M <- genre %>%
+  select(popularity, acousticness, danceability, duration_ms, energy, instrumentalness, liveness, loudness, speechiness, tempo, valence)
+
+testRes = cor.mtest(M, conf.level = 0.95)
+
+M <- cor(M)
+
+corrplot(M, p.mat = testRes$p, method = 'circle', type = 'lower', insig='blank',
+         addCoef.col ='black', number.cex = 0.8, order = 'AOE', diag=FALSE)
+```
+
+```{R}
+genre %>%
+  ggplot(aes(x=acousticness, color = music_genre, fill = music_genre)) +
+  geom_density(position = "fill", color = "#00000000") +
+  scale_fill_brewer(palette = "Spectral")
+```
+```{R}
+genre %>%
+  ggplot(aes(x=popularity, color = music_genre, fill = music_genre)) +
+  geom_density(position = "fill", color = "#00000000") +
+  scale_fill_brewer(palette = "Spectral")
+```
+
+```{R}
+genre %>%
+  ggplot(aes(x=tempo, color = music_genre, fill = music_genre)) +
+  geom_density(position = "fill", color = "#00000000") +
+  scale_fill_brewer(palette = "Spectral")
+```
+
+```{R}
+genre %>%
+  ggplot(aes(x = key, y = music_genre, color = music_genre, fill = music_genre)) +
+  geom_count(aes(size = after_stat(prop), group = 1)) +
+  scale_size_area(max_size = 12) +
+  scale_colour_brewer(palette = "Spectral")
+```
+
+

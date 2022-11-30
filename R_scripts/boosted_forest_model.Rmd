@@ -1,0 +1,126 @@
+---
+title: "Forest Models - Music Genre Classification"
+author: "Kabir Snell"
+date: "2022-11-30"
+output: html_document
+---
+```{R message = FALSE}
+# Loading Libraries
+library(tidyverse)
+library(tidymodels)
+library(ISLR)
+library(rpart.plot)
+library(vip)
+library(janitor)
+library(randomForest)
+library(xgboost)
+library(ranger)
+library(corrplot)
+```
+
+```{R}
+# Reading in the data
+genre <- read.csv('../data/processed/processed_data.csv', stringsAsFactors = TRUE)
+```
+
+```{R}
+# Splitting the data
+set.seed(727)
+
+genre_split <- initial_split(genre, prop = .8)
+
+genre_train <- training(genre_split)
+genre_test <- testing(genre_split)
+```
+
+```{R}
+# Creating 2 fold validation
+genre_fold <- vfold_cv(genre_train, v = 2, strata = music_genre)
+```
+
+```{R}
+# Creating Recipe
+genre_recipe <- recipe(music_genre ~ popularity + acousticness + danceability + duration_ms + energy + instrumentalness + liveness + loudness + mode + speechiness + tempo + key, data = genre_train) %>%
+  step_dummy(mode) %>%
+  step_dummy(key) %>%
+  step_normalize(all_predictors())
+```
+
+```{R}
+# Boosted forest spec
+boosted_spec <- boost_tree(trees = tune()) %>%
+  set_engine("xgboost") %>%
+  set_mode("classification")
+
+# Boosted forest workflow
+boosted_workflow <- workflow() %>% 
+  add_recipe(genre_recipe) %>% 
+  add_model(boosted_spec)
+
+# Boosted forest parameter grid
+boosted_grid <- grid_regular(trees(range = c(1, 500)), levels = 10)
+```
+
+```{R eval = FALSE}
+# Tuning Grid
+boosted_tune <- tune_grid(
+  boosted_workflow,
+  resamples = genre_fold,
+  grid = boosted_grid,
+  metrics = metric_set(roc_auc)
+)
+
+# Writing rds file
+write_rds(boosted_tune, file = "boosted.rds")
+```
+
+```{R}
+boosted_tune <- read_rds(file = "boosted.rds")
+autoplot(boosted_tune)
+```
+```{R}
+boosted_best_roc_auc <- boosted_tune %>% 
+  collect_metrics() %>% 
+  arrange(desc(mean)) %>% 
+  head(1)
+
+boosted_best_roc_auc
+```
+```{R}
+best <- select_best(boosted_tune)
+
+final_workflow <- finalize_workflow(boosted_workflow, best)
+
+final_fit <- fit(final_workflow, data = genre_train)
+
+final_tibble <- augment(final_fit, new_data = genre_test)
+
+final_tibble %>% 
+  roc_auc(truth = music_genre, estimate = .pred_Alternative:.pred_Rock)
+```
+
+```{R}
+all_roc_curves <- final_tibble %>% 
+  roc_curve(truth = music_genre, estimate = .pred_Alternative:.pred_Rock) %>% 
+  autoplot()
+all_roc_curves
+```
+
+```{r}
+confusion_matrix <- final_tibble %>%
+  conf_mat(music_genre, .pred_class) %>% 
+  autoplot(type = "heatmap")
+confusion_matrix
+```
+
+```{R}
+final_tibble %>%
+  accuracy(truth = music_genre, estimate = .pred_class)
+```
+
+
+
+
+
+
+
