@@ -1,0 +1,128 @@
+---
+title: "Neural Network Model - Music Genre Classification"
+author: "Kabir Snell"
+date: "2022-10-03"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{R message=FALSE}
+# Loading Libraries
+library(tidyverse)
+library(tidymodels)
+library(spotifyr)
+library(randomForest)
+library(alr4)
+library(caret)
+library(keras)
+library(tensorflow)
+```
+
+```{R}
+# Reading in the data
+genre <- read.csv('../data/processed/processed_data.csv', stringsAsFactors = TRUE)
+```
+
+```{R}
+genre <- genre %>%
+  select(-X)
+```
+
+```{R}
+set.seed(727)
+
+shuffle = genre[sample(1:nrow(genre)), ]
+```
+
+```{R}
+# Splitting the data
+set.seed(727)
+
+genre_split <- initial_split(shuffle, prop = .8)
+
+genre_train <- training(genre_split)
+genre_test <- testing(genre_split)
+```
+
+```{R}
+x_train <- genre_train %>%
+  select(-c(X, music_genre)) %>%
+  mutate(key = as.numeric(key), mode = as.numeric(mode)) %>%
+  as.matrix()
+
+y_train <- genre_train %>%
+  select(music_genre) %>%
+  mutate(music_genre = as.numeric(music_genre)) %>%
+  as.matrix() %>%
+  to_categorical()
+```
+
+```{R}
+x_test <- genre_test %>%
+  select(-c(music_genre, key, mode)) %>%
+  as.matrix()
+
+#y_test <- genre_test %>%
+#  select(music_genre) %>%
+#  mutate(music_genre = as.numeric(music_genre)) %>%
+#  as.matrix()
+```
+
+```{R}
+y_test <- genre_test %>%
+  select(music_genre) %>%
+  rowid_to_column("X") %>%
+  mutate(seen = 1) %>%
+  pivot_wider(names_from = music_genre, values_from = seen, values_fill = 0) %>%
+  select(-X) %>%
+  as.matrix()
+```
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(5, activation = 'relu', input_shape = ncol(x_test)) %>%
+  layer_dense(10, activation = 'sigmoid')
+
+model %>%
+  compile(
+    loss = 'categorical_crossentropy',
+    optimizer = 'rmsprop',
+    metrics = c('accuracy')
+  )
+```
+
+```{r}
+history <- model %>%
+  fit(x = x_test,
+      y = y_test,
+      epochs = 10,
+      validation_split = .2)
+```
+
+```{r}
+summary(model)
+evaluate(model, x_test, y_test)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

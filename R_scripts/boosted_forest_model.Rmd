@@ -1,5 +1,5 @@
 ---
-title: "Forest Models - Music Genre Classification"
+title: "Boosted Forest Model - Music Genre Classification"
 author: "Kabir Snell"
 date: "2022-11-30"
 output: html_document
