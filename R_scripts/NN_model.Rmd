@@ -47,30 +47,12 @@ genre_test <- testing(genre_split)
 
 ```{R}
 x_train <- genre_train %>%
-  select(-c(X, music_genre)) %>%
+  select(-c(music_genre, duration_ms)) %>%
   mutate(key = as.numeric(key), mode = as.numeric(mode)) %>%
-  as.matrix()
+  as.matrix() %>%
+  to_categorical(key)
 
 y_train <- genre_train %>%
-  select(music_genre) %>%
-  mutate(music_genre = as.numeric(music_genre)) %>%
-  as.matrix() %>%
-  to_categorical()
-```
-
-```{R}
-x_test <- genre_test %>%
-  select(-c(music_genre, key, mode)) %>%
-  as.matrix()
-
-#y_test <- genre_test %>%
-#  select(music_genre) %>%
-#  mutate(music_genre = as.numeric(music_genre)) %>%
-#  as.matrix()
-```
-
-```{R}
-y_test <- genre_test %>%
   select(music_genre) %>%
   rowid_to_column("X") %>%
   mutate(seen = 1) %>%
@@ -79,33 +61,53 @@ y_test <- genre_test %>%
   as.matrix()
 ```
 
+```{R}
+x_test <- genre_test %>%
+  select(-c(music_genre, key, mode)) %>%
+  scale() %>%
+  as.matrix()
+
+y_test <- genre_test %>%
+  select(music_genre) %>%
+  rowid_to_column("X") %>%
+  mutate(seen = 1) %>%
+  pivot_wider(names_from = music_genre, values_from = seen, values_fill = 0) %>%
+  select(-X) %>%
+  select(Alternative, Anime, Blues, Classical, Country, Electronic, 'Hip-Hop', Jazz, Rap, Rock) %>%
+  as.matrix()
+```
+
 ```{r}
 model <- keras_model_sequential() %>%
-  layer_dense(5, activation = 'relu', input_shape = ncol(x_test)) %>%
-  layer_dense(10, activation = 'sigmoid')
+  layer_dense(150, input_shape = ncol(x_train), activation = "relu") %>%
+  layer_dense(25, activation = "relu") %>%
+  layer_dense(10, activation = "softmax")
 
 model %>%
   compile(
-    loss = 'categorical_crossentropy',
-    optimizer = 'rmsprop',
-    metrics = c('accuracy')
+    loss = "categorical_crossentropy",
+    optimizer = "adam",
+    metrics = c("accuracy")
   )
 ```
 
 ```{r}
 history <- model %>%
-  fit(x = x_test,
-      y = y_test,
-      epochs = 10,
+  fit(x = x_train,
+      y = y_train,
+      epochs = 100,
+      batch_size = 200,
       validation_split = .2)
 ```
 
 ```{r}
 summary(model)
-evaluate(model, x_test, y_test)
+evaluate(model, x_train, y_train)
 ```
 
-
+```{R}
+evaluate(model, x_test, y_test)
+```
 
 
 
