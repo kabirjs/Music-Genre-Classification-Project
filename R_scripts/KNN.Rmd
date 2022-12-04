@@ -1,0 +1,88 @@
+---
+title: "KNN Model - Music Genre Classification"
+author: "Kabir Snell"
+date: "2022-11-30"
+output: html_document
+---
+```{R message = FALSE}
+# Loading Libraries
+library(tidyverse)
+library(tidymodels)
+library(ISLR)
+library(rpart.plot)
+library(vip)
+library(janitor)
+library(kknn)
+library(ranger)
+library(corrplot)
+library(tictoc)
+library(doParallel)
+```
+
+```{R}
+# Reading in the data
+genre <- read.csv('../data/processed/processed_data.csv', stringsAsFactors = TRUE)
+```
+
+```{R}
+# Splitting the data
+set.seed(727)
+
+genre_split <- initial_split(genre, prop = .8)
+
+genre_train <- training(genre_split)
+genre_test <- testing(genre_split)
+```
+
+```{R}
+# Creating 2 fold validation
+genre_fold <- vfold_cv(genre_train, v = 2, strata = music_genre)
+```
+
+```{R}
+# Creating Recipe
+genre_recipe <- recipe(music_genre ~ popularity + acousticness + danceability + duration_ms + energy + instrumentalness + liveness + loudness + mode + speechiness + tempo + key, data = genre_train) %>%
+  step_dummy(mode) %>%
+  step_dummy(key) %>%
+  step_normalize(all_predictors())
+```
+
+```{R}
+knn_spec <- nearest_neighbor() %>%
+  set_engine("kknn") %>%
+  set_mode("classification")
+
+#knn_workflow <- workflow() %>%
+#  add_recipe(genre_recipe) %>%
+#  add_model(knn_spec)
+#
+#knn_grid <- grid_regular(neighbors = 10, dist_power = c(1, 5), levels = 5)
+```
+
+```{R}
+knn_tune <- knn_spec %>%
+  set_args(neighbors = 10,
+           weight_func = tune(),
+           dist_power = tune())
+
+parallel::detectCores()
+tic()
+cl <- parallel::makeCluster(8)
+doParallel::registerDoParallel(cl)
+
+knn_res <- tune_grid(
+  knn_tune,
+  preprocessor = genre_recipe,
+  resamples = genre_fold,
+  control = control_resamples(save_pred = TRUE)
+)
+
+parallel::stopCluster(cl)
+toc()
+
+```
+
+
+
+
+
