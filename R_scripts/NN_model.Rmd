@@ -61,6 +61,7 @@ y_train <- genre_train %>%
   mutate(seen = 1) %>%
   pivot_wider(names_from = music_genre, values_from = seen, values_fill = 0) %>%
   select(-X) %>%
+  select(Alternative, Anime, Blues, Classical, Country, Electronic, 'Hip-Hop', Jazz, Rap, Rock) %>%
   as.matrix()
 ```
 
@@ -87,8 +88,9 @@ y_test <- genre_test %>%
 
 ```{r}
 model <- keras_model_sequential() %>%
-  layer_dense(150, input_shape = ncol(x_train), activation = "relu") %>%
-  layer_dense(25, activation = "relu") %>%
+  layer_dense(128, input_shape = ncol(x_train), activation = "relu") %>%
+  layer_dense(128, input_shape = ncol(x_train), activation = "relu") %>%
+  layer_dense(64, activation = "relu") %>%
   layer_dense(10, activation = "softmax")
 
 model %>%
@@ -116,7 +118,6 @@ evaluate(model, x_train, y_train)
 ```{R}
 evaluate(model, x_test, y_test)
 ```
-
 
 
 

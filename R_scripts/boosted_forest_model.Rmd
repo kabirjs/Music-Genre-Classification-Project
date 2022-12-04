@@ -118,8 +118,22 @@ final_tibble %>%
   accuracy(truth = music_genre, estimate = .pred_class)
 ```
 
+```{R}
+final_accuracy <- final_tibble %>%
+  as.data.frame() %>%
+  group_by(music_genre) %>%
+  accuracy(truth = music_genre, estimate = .pred_class) %>%
+  select(music_genre, .metric, .estimate)
 
+final_accuracy
+```
 
+```{R}
+final_accuracy %>%
+  ggplot(aes(x = music_genre, fill = music_genre, y = .estimate)) +
+  geom_col() +
+  scale_fill_brewer(palette = "Spectral")
+```
 
 
 
