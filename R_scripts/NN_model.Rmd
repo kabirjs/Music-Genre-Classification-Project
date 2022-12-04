@@ -11,7 +11,6 @@ output:
 # Loading Libraries
 library(tidyverse)
 library(tidymodels)
-library(spotifyr)
 library(randomForest)
 library(alr4)
 library(caret)
@@ -48,9 +47,13 @@ genre_test <- testing(genre_split)
 ```{R}
 x_train <- genre_train %>%
   select(-c(music_genre, duration_ms)) %>%
-  mutate(key = as.numeric(key), mode = as.numeric(mode)) %>%
-  as.matrix() %>%
-  to_categorical(key)
+  rowid_to_column("X") %>%
+  mutate(key_seen = 1) %>%
+  pivot_wider(names_from = key, values_from = key_seen, values_fill = 0) %>%
+  mutate(mode_seen = 1) %>%
+  pivot_wider(names_from = mode, values_from = mode_seen, values_fill = 0) %>%
+  select(-c(X)) %>%
+  as.matrix()
 
 y_train <- genre_train %>%
   select(music_genre) %>%
@@ -63,8 +66,13 @@ y_train <- genre_train %>%
 
 ```{R}
 x_test <- genre_test %>%
-  select(-c(music_genre, key, mode)) %>%
-  scale() %>%
+  select(-c(music_genre, duration_ms)) %>%
+  rowid_to_column("X") %>%
+  mutate(key_seen = 1) %>%
+  pivot_wider(names_from = key, values_from = key_seen, values_fill = 0) %>%
+  mutate(mode_seen = 1) %>%
+  pivot_wider(names_from = mode, values_from = mode_seen, values_fill = 0) %>%
+  select(-c(X)) %>%
   as.matrix()
 
 y_test <- genre_test %>%
@@ -108,21 +116,6 @@ evaluate(model, x_train, y_train)
 ```{R}
 evaluate(model, x_test, y_test)
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
