@@ -23,7 +23,7 @@ The first thing we will do is remove columns that will not be useful in our pred
 
 ```{R}
 genre <- genre %>%
-  select(-c(instance_id, artist_name, track_name, obtained_date))
+  select(-c(instance_id, track_name, artist_name, obtained_date))
 ```
 
 ### Removing Missing Observations / Values

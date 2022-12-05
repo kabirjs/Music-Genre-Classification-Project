@@ -21,6 +21,8 @@ library(tensorflow)
 ```{R}
 # Reading in the data
 genre <- read.csv('../data/processed/processed_data.csv', stringsAsFactors = TRUE)
+
+genre <- genre[sample(1:nrow(genre), 5000, replace = FALSE),]
 ```
 
 ```{R}
@@ -38,21 +40,32 @@ shuffle = genre[sample(1:nrow(genre)), ]
 # Splitting the data
 set.seed(727)
 
-genre_split <- initial_split(shuffle, prop = .8)
+genre_split <- initial_split(shuffle, prop = .9)
 
 genre_train <- training(genre_split)
 genre_test <- testing(genre_split)
 ```
 
 ```{R}
-x_train <- genre_train %>%
-  select(-c(music_genre, duration_ms)) %>%
+x_train_categorical <- genre_train %>%
+  select(c(key, mode)) %>%
   rowid_to_column("X") %>%
   mutate(key_seen = 1) %>%
   pivot_wider(names_from = key, values_from = key_seen, values_fill = 0) %>%
   mutate(mode_seen = 1) %>%
-  pivot_wider(names_from = mode, values_from = mode_seen, values_fill = 0) %>%
-  select(-c(X)) %>%
+  pivot_wider(names_from = mode, values_from = mode_seen, values_fill = 0)
+
+x_train <- genre_train %>%
+  select(-c(music_genre, key, mode, duration_ms)) %>%
+  scale() %>%
+  normalize() %>%
+  as.data.frame() %>%
+  rowid_to_column("X")
+
+x_train <- merge(x_train, x_train_categorical, by = "X")
+
+x_train <- x_train %>%
+  select(-X) %>%
   as.matrix()
 
 y_train <- genre_train %>%
@@ -66,14 +79,25 @@ y_train <- genre_train %>%
 ```
 
 ```{R}
-x_test <- genre_test %>%
-  select(-c(music_genre, duration_ms)) %>%
+x_test_categorical <- genre_test %>%
+  select(c(key, mode)) %>%
   rowid_to_column("X") %>%
   mutate(key_seen = 1) %>%
   pivot_wider(names_from = key, values_from = key_seen, values_fill = 0) %>%
   mutate(mode_seen = 1) %>%
-  pivot_wider(names_from = mode, values_from = mode_seen, values_fill = 0) %>%
-  select(-c(X)) %>%
+  pivot_wider(names_from = mode, values_from = mode_seen, values_fill = 0)
+
+x_test <- genre_test %>%
+  select(-c(music_genre, key, mode, duration_ms)) %>%
+  scale() %>%
+  normalize() %>%
+  as.data.frame() %>%
+  rowid_to_column("X")
+
+x_test <- merge(x_test, x_test_categorical, by = "X")
+
+x_test <- x_test %>%
+  select(-X) %>%
   as.matrix()
 
 y_test <- genre_test %>%
@@ -88,16 +112,15 @@ y_test <- genre_test %>%
 
 ```{r}
 model <- keras_model_sequential() %>%
-  layer_dense(128, input_shape = ncol(x_train), activation = "relu") %>%
-  layer_dense(128, input_shape = ncol(x_train), activation = "relu") %>%
-  layer_dense(64, activation = "relu") %>%
+  layer_dense(64, input_shape = ncol(x_train), activation = "relu") %>%
+  layer_dense(64, activation = "softmax") %>%
   layer_dense(10, activation = "softmax")
 
 model %>%
   compile(
-    loss = "categorical_crossentropy",
-    optimizer = "adam",
-    metrics = c("accuracy")
+    loss = list(loss_mean_squared_error()),
+    optimizer = optimizer_rmsprop(learning_rate = .001),
+    metrics = c(metric_categorical_accuracy(), metric_auc())
   )
 ```
 
@@ -105,9 +128,8 @@ model %>%
 history <- model %>%
   fit(x = x_train,
       y = y_train,
-      epochs = 100,
-      batch_size = 200,
-      validation_split = .2)
+      epochs = 50,
+      validation_split = .1)
 ```
 
 ```{r}
