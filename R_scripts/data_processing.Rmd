@@ -50,6 +50,9 @@ genre$tempo <- as.numeric(genre$tempo)
 
 ### Writing the clean data frame to a CSV file
 ```{R}
+set.seed(727)
+genre <- genre[sample(1:nrow(genre), 10000, replace = FALSE),]
+
 write.csv(genre, "../data/processed/processed_data.csv")
 ```
 

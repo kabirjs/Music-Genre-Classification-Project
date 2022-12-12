@@ -19,28 +19,6 @@ genre <- read.csv('../data/processed/processed_data.csv', stringsAsFactors = TRU
 ```
 
 ```{R}
-# Removing extreme outliers for better visualizations
-outliers <- function(x) {
-
-  Q1 <- quantile(x, probs=.25)
-  Q3 <- quantile(x, probs=.75)
-  iqr = Q3-Q1
-
- upper_limit = Q3 + (iqr*3)
- lower_limit = Q1 - (iqr*3)
-
- x > upper_limit | x < lower_limit
-}
-
-remove_outliers <- function(df, cols = names(df)) {
-  for (col in cols) {
-    df <- df[!outliers(df[[col]]),]
-  }
-  df
-}
-```
-
-```{R}
 genre %>%
   ggplot(aes(x = music_genre, fill = music_genre)) +
   geom_bar() +
@@ -50,12 +28,9 @@ genre %>%
 ```{R}
 genre_numeric <- genre %>%
   select(-c(X, key, mode, music_genre)) %>%
-  remove_outliers() %>%
   pivot_longer(everything(), names_to = "variable", values_to = "value") %>%
   arrange(variable)
-```
 
-```{R}
 genre_numeric %>%
   ggplot(aes(x=value, fill = variable)) +
   geom_histogram() +
@@ -97,7 +72,7 @@ genre %>%
 
 ```{R}
 genre %>%
-  ggplot(aes(x = key, y = music_genre, color = music_genre, fill = music_genre)) +
+  ggplot(aes(x = mode, y = music_genre, color = music_genre, fill = music_genre)) +
   geom_count(aes(size = after_stat(prop), group = 1)) +
   scale_size_area(max_size = 12) +
   scale_colour_brewer(palette = "Spectral")

@@ -1,0 +1,29 @@
+X: Row ID, Row number from the original unprocessed data set
+
+popularity: Numeric value assigned to each instance describing the popularity of the song on Spotify, given by the Spotify API
+
+acousticness: A confidence measure from 0.0 to 1.0 of whether the track is acoustic.
+
+danceability: Describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity.
+
+duration_ms: Describes how long the song is in miliseconds.
+
+energy: Represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy.
+
+instrumentalness: Predicts whether a track contains no vocals, and assigns a numeric value.
+
+key: The estimated overall key of the track. Integers map to pitches using standard Pitch Class notation.
+
+liveness: Detects the presence of an audience in the recording. Higher liveness values represent an increased probability that the track was performed live.
+
+loudness: The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks.
+
+mode: Indicates the modality (major or minor) of a track, the type of scale from which its melodic content is derived. Major is represented by 1 and minor is 0.
+
+speechiness: This detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value.
+
+tempo: The overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece, and derives directly from the average beat duration.
+
+valence: Describes the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry).
+
+music_genre: Factor with 10 levels classifying the genre of the song.

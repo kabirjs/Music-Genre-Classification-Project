@@ -21,8 +21,6 @@ library(tensorflow)
 ```{R}
 # Reading in the data
 genre <- read.csv('../data/processed/processed_data.csv', stringsAsFactors = TRUE)
-
-genre <- genre[sample(1:nrow(genre), 5000, replace = FALSE),]
 ```
 
 ```{R}
@@ -31,16 +29,10 @@ genre <- genre %>%
 ```
 
 ```{R}
-set.seed(727)
-
-shuffle = genre[sample(1:nrow(genre)), ]
-```
-
-```{R}
 # Splitting the data
 set.seed(727)
 
-genre_split <- initial_split(shuffle, prop = .9)
+genre_split <- initial_split(shuffle, prop = .8)
 
 genre_train <- training(genre_split)
 genre_test <- testing(genre_split)
@@ -56,7 +48,7 @@ x_train_categorical <- genre_train %>%
   pivot_wider(names_from = mode, values_from = mode_seen, values_fill = 0)
 
 x_train <- genre_train %>%
-  select(-c(music_genre, key, mode, duration_ms)) %>%
+  select(-c(music_genre, key, mode, duration_ms, X)) %>%
   scale() %>%
   normalize() %>%
   as.data.frame() %>%
@@ -88,7 +80,7 @@ x_test_categorical <- genre_test %>%
   pivot_wider(names_from = mode, values_from = mode_seen, values_fill = 0)
 
 x_test <- genre_test %>%
-  select(-c(music_genre, key, mode, duration_ms)) %>%
+  select(-c(music_genre, key, mode, duration_ms, X)) %>%
   scale() %>%
   normalize() %>%
   as.data.frame() %>%
@@ -110,29 +102,32 @@ y_test <- genre_test %>%
   as.matrix()
 ```
 
-```{r}
+```{r eval=FALSE}
 model <- keras_model_sequential() %>%
   layer_dense(64, input_shape = ncol(x_train), activation = "relu") %>%
-  layer_dense(64, activation = "softmax") %>%
   layer_dense(10, activation = "softmax")
 
 model %>%
   compile(
     loss = list(loss_mean_squared_error()),
     optimizer = optimizer_rmsprop(learning_rate = .001),
-    metrics = c(metric_categorical_accuracy(), metric_auc())
+    metrics = c(metric_categorical_accuracy(), metric_auc(), metric_categorical_crossentropy())
   )
 ```
 
-```{r}
+```{r eval=FALSE}
 history <- model %>%
   fit(x = x_train,
       y = y_train,
       epochs = 50,
       validation_split = .1)
+
+save_model_tf(model, "NNModel")
 ```
 
 ```{r}
+model <- load_model_tf("NNModel")
+
 summary(model)
 evaluate(model, x_train, y_train)
 ```
